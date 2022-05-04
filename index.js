@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
+const ObjectId = require('mongodb').ObjectId;
 const { MongoClient } = require("mongodb");
 
 const port = process.env.PORT || 5000;
@@ -28,6 +29,7 @@ async function run() {
     const emailNewsletterCollection = database.collection("newsletter");
     // review collection
     const reviewCollection = database.collection("reviews");
+    const myOrderCollection = database.collection("allOder")
 
     // get api for send data in client site
     app.get("/bikedatas", async (req, res) => {
@@ -38,10 +40,8 @@ async function run() {
 
     app.post("/bikedatas", async (req, res) => {
       const newBike = req.body;
-      console.log("data from fontent", newBike);
       const result = await bikesCollection.insertOne(newBike);
       res.json(result);
-      console.log("from backend");
     });
     // get user all user email
     app.post("/users", async (req, res) => {
@@ -49,6 +49,19 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.json(result);
     });
+    // add products my order data collection
+    app.post("/allOrder", async (req, res) => {
+      const newBike = req.body;
+      const result = await myOrderCollection.insertOne(newBike);
+      res.json(result);
+    });
+    app.get("/myOrder", async (req,res) =>{
+      const email = req.query.email;
+      const query = {email : email}
+      const cursor = await myOrderCollection.find(query);
+      const result = await cursor.toArray();
+      res.json(result);
+    })
     // update data using put methode
     app.put("/users", async (req, res) => {
       const user = req.body;
@@ -61,6 +74,18 @@ async function run() {
         options
       );
       res.json(result);
+      console.log(user)
+    });
+    app.get("/details/:id", async (req, res) => {
+      const id = req.params.id
+      const result = await bikesCollection
+        .find({
+          _id: ObjectId(id),
+        })
+        .toArray();
+      res.send(result[0]);
+      // console.log(result[0])
+      // console.log(id)
     });
     // get all reviews by using get method
     app.get("/bikedata", async (req, res) => {
@@ -70,8 +95,9 @@ async function run() {
     });
     // delate a data from data collection
     app.delete("/cancelbikes/:id", async (req, res) => {
+      const id = req.params.id;
       const presentCollection = await bikesCollection.deleteOne({
-        _id: ObjectId(req.params.id),
+        _id: ObjectId(id),
       });
       res.send(presentCollection);
     });
