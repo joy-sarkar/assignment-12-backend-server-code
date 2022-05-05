@@ -49,11 +49,28 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.json(result);
     });
+    // cheek isAdmin
+    app.get("/users/:email", async(req,res) =>{
+      const email =req.params.email;
+      const query = {email: email};
+      const user = await usersCollection.findOne(query);
+      let isAdmin = true;
+      if(user?.role === "admin"){
+        isAdmin = true;
+      }
+      res.json({admin: isAdmin})
+    });
     // add products my order data collection
-    app.post("/allOrder", async (req, res) => {
-      const newBike = req.body;
-      const result = await myOrderCollection.insertOne(newBike);
+    app.post("/addcart", async (req, res) => {
+      const order = req.body;
+      const result = await myOrderCollection.insertOne(order);
       res.json(result);
+    });
+    
+    app.get("/allOrder", async (req, res) => {
+      const cursor =  myOrderCollection.find({});
+      const orders = await cursor.toArray();
+      res.send(orders);
     });
     app.get("/myOrder", async (req,res) =>{
       const email = req.query.email;
@@ -74,8 +91,17 @@ async function run() {
         options
       );
       res.json(result);
-      console.log(user)
+      // console.log(user)
     });
+    // make admin api create
+    app.put("/users/admin",async(req,res) =>{
+      const user = req.body;
+      const filter ={email: user.admin};
+      const updateDoc = {$set:{role:"admin"}};
+      const result = await usersCollection.updateOne(filter,updateDoc);
+      res.json(result);
+    });
+
     app.get("/details/:id", async (req, res) => {
       const id = req.params.id
       const result = await bikesCollection
@@ -87,12 +113,22 @@ async function run() {
       // console.log(result[0])
       // console.log(id)
     });
+
+
     // get all reviews by using get method
-    app.get("/bikedata", async (req, res) => {
+    app.get("/reviews", async (req, res) => {
       const cursor = reviewCollection.find({});
       const reviews = await cursor.toArray();
       res.send(reviews);
     });
+
+    // post reviews api 
+    app.post("/reviews",async(req,res)=>{
+      const review = req.body;
+      const new_reviews = await reviewCollection.insertOne(review);
+      res.json(new_reviews);
+    })
+
     // delate a data from data collection
     app.delete("/cancelbikes/:id", async (req, res) => {
       const id = req.params.id;
@@ -101,6 +137,18 @@ async function run() {
       });
       res.send(presentCollection);
     });
+    // delete a data from my order
+    app.delete("/deleteorder/:id", async (req, res) => {
+      const id = req.params.id;
+      const presentCollection = await myOrderCollection.deleteOne({
+        _id: ObjectId(id),
+      });
+      res.send(presentCollection);
+    });
+    // update pending status
+    app.put("/updata", async(req,res) =>{
+
+    })
   } finally {
     // await client.close();
   }
